@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAuthToken } from '@/api/api';
 
 type UserRole = 'admin' | 'manager' | 'user';
 
 interface User {
-  id: string;
+  id: number;          // ✅ FIXED: number, not string
   name: string;
   email: string;
   role: UserRole;
@@ -14,12 +14,19 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  loading: boolean;
   login: (token: string, user: User) => Promise<void>;
   logout: () => Promise<void>;
-  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Centralized keys (avoids typo bugs later)
+const STORAGE_KEYS = {
+  TOKEN: '@auth_token',
+  USER: '@user_data',
+  LAST_ACTIVITY: '@last_activity_time',
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -27,64 +34,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadStorageData = async () => {
+    const loadAuthState = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem('@auth_token');
-        const storedUser = await AsyncStorage.getItem('@user_data');
+        const [storedToken, storedUser] = await AsyncStorage.multiGet([
+          STORAGE_KEYS.TOKEN,
+          STORAGE_KEYS.USER,
+        ]);
 
-        if (storedToken && storedUser) {
-          setAuthToken(storedToken);
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+        const tokenValue = storedToken[1];
+        const userValue = storedUser[1];
+
+        if (tokenValue && userValue) {
+          const parsedUser: User = JSON.parse(userValue);
+
+          // Minimal shape validation
+          if (
+            typeof parsedUser.id === 'number' &&
+            typeof parsedUser.role === 'string'
+          ) {
+            setAuthToken(tokenValue);
+            setToken(tokenValue);
+            setUser(parsedUser);
+          } else {
+            // Corrupted data → clean up
+            await AsyncStorage.multiRemove([
+              STORAGE_KEYS.TOKEN,
+              STORAGE_KEYS.USER,
+            ]);
+          }
         }
-      } catch (e) {
-        console.error('Failed to load auth state', e);
+      } catch (err) {
+        console.error('Failed to restore auth state:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadStorageData();
+    loadAuthState();
   }, []);
 
   const login = async (newToken: string, newUser: User) => {
     try {
-      // Sync API + memory
       setAuthToken(newToken);
       setToken(newToken);
       setUser(newUser);
 
-      // Persist
       await AsyncStorage.multiSet([
-        ['@auth_token', newToken],
-        ['@user_data', JSON.stringify(newUser)],
-        ['@last_activity_time', Date.now().toString()],
+        [STORAGE_KEYS.TOKEN, newToken],
+        [STORAGE_KEYS.USER, JSON.stringify(newUser)],
+        [STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString()],
       ]);
-    } catch (e) {
-      console.error('Login storage failed', e);
+    } catch (err) {
+      console.error('Login persistence failed:', err);
     }
   };
 
   const logout = async () => {
     try {
-      // Clear API + memory
       setAuthToken(undefined);
       setToken(null);
       setUser(null);
 
-      // Clear persistence
       await AsyncStorage.multiRemove([
-        '@auth_token',
-        '@user_data',
-        '@last_activity_time',
+        STORAGE_KEYS.TOKEN,
+        STORAGE_KEYS.USER,
+        STORAGE_KEYS.LAST_ACTIVITY,
       ]);
-    } catch (e) {
-      console.error('Logout failed', e);
+    } catch (err) {
+      console.error('Logout failed:', err);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -93,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider');
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
 };
