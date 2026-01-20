@@ -86,6 +86,8 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
         {/* Menu items */}
         <View className="border-t border-gray-500 pt-8">
           <MenuItem label="Home" icon="🏠" routeName="ManagerHome" marginTop="mt-4" />
+          <MenuItem label="Create Tasks" icon="✏️" routeName="CreateTasks" />
+          <MenuItem label="View Tasks" icon="👁️" routeName="ViewTasks" />
           <MenuItem label="Assign Tasks" icon="❔" routeName="AssignTasks" />
           <MenuItem
             label="Review Tasks"
@@ -93,7 +95,6 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
             routeName="ReviewTasks"
             badgeCount={pendingCount}
           />
-          <MenuItem label="Create Tasks" icon="✏️" routeName="CreateTasks" />
         </View>
       </View>
 
