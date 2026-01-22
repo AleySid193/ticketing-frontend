@@ -10,8 +10,8 @@ interface StatsGridProps {
     icon?: React.ReactNode;
     description?: string;
   }[];
-  columns?: number; // optional, default based on screen size
-  spacing?: number; // optional, space between cards
+  columns?: number;
+  spacing?: number;
 }
 
 export const StatsGrid: React.FC<StatsGridProps> = ({ cards, columns, spacing = 20 }) => {

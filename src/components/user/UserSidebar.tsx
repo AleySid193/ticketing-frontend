@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, Animated } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
+import { getSideBarManager } from '@/services/user'
 import { useAuth } from '@/context/AuthContext';
 import { UserStackParamList } from '@/navigation/UserNavigator';
 
@@ -12,7 +12,7 @@ interface UserSidebarProps {
   pendingCount: number;
 }
 
-type UserNavProp = NativeStackNavigationProp<UserStackParamList>;
+type UserNavProp = NativeStackNavigationProp<UserStackParamList>
 
 export const UserSidebar: React.FC<UserSidebarProps> = ({
   collapsed,
@@ -32,6 +32,20 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({
     badgeCount?: number;
     marginTop?: string;
   }
+
+  const [managerName, setManagerName] = React.useState<string>('');
+
+  useEffect(() => {
+  const fetchManagerName = async () => {
+    try {
+      const data = await getSideBarManager();
+      setManagerName(data?.managerName || '');
+    } catch (error) {
+      console.error('Failed to fetch manager name:', error);
+    }
+  };
+  fetchManagerName();
+  }, []);
 
   const MenuItem: React.FC<MenuItemProps> = React.memo(
     ({ label, icon = '', routeName, badgeCount = 0, marginTop = 'mt-4' }) => {
@@ -80,6 +94,9 @@ export const UserSidebar: React.FC<UserSidebarProps> = ({
           </Text>
           <Text className="text-gray-300 text-sm" numberOfLines={1}>
             {user?.email}
+          </Text>
+          <Text className="text-yellow-400 text-md" numberOfLines={1}>
+            {managerName ? `Managed by - ${managerName}` : 'Manager: N/A'}
           </Text>
         </View>
 

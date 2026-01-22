@@ -17,7 +17,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, descri
         <Text className="text-2xl font-bold text-gray-900">{value}</Text>
         {description && <Text className="text-gray-400 mt-1">{description}</Text>}
       </View>
-      {icon && <Text>icon</Text>}
+      <Text className = "text-4xl">{icon || "Icon"}</Text>
     </View>
   );
 };
