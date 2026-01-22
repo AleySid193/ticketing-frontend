@@ -39,8 +39,8 @@ export const LoginScreen = () => {
       setError('');
 
       const data = await loginUser(email, password);
-
-      login(data.token, data.user);
+      const userWithId = { ...data.user, id: Number((data.user as any).id) };
+      login(data.token, userWithId as any);
 
       // Navigate based on role
       if (data.user.role === 'admin') navigation.navigate('Admin');

@@ -14,7 +14,6 @@ export const UserNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="UserHome" component={UserHome} />
       <Stack.Screen name="UserSettings" component={UserSettings} />
-
     </Stack.Navigator>
   );
 };
