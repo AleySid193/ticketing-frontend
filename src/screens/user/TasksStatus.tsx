@@ -4,80 +4,81 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Eye, ArrowLeft, Send } from 'lucide-react-native';
+import { Eye, ArrowLeft } from 'lucide-react-native';
 import { UserLayout } from '@/components/user/UserLayout';
-import { getAssignedTasks, submitAssignedTask } from '@/services/user';
+import { getTasksStatus } from '@/services/user';
 
 /* ---------------- TYPES ---------------- */
-type Priority = 'low' | 'medium' | 'high';
+type Status = 'submitted' | 'completed';
 
 type ApiTask = {
   id: number;
   title: string;
   description: string;
-  priority: Priority;
   points: number;
+  status: Status;
 };
 
 type UiTask = ApiTask & {
   isExpanded: boolean;
-  isSubmitting: boolean;
-};
-
-/* ---------------- Fetch ---------------- */
-const fetchTasks = async (): Promise<ApiTask[]> => {
-  const data = await getAssignedTasks();
-  return data;
 };
 
 /* ---------------- SCREEN ---------------- */
-export const AssignedTasks = () => {
+export const TasksStatus = () => {
   const [tasks, setTasks] = useState<UiTask[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const loadTasks = async () => {
-    setRefreshing(true);
-    const data = await fetchTasks();
+    setLoading(true);
+    const data = await getTasksStatus();
+
     setTasks(
       data.map(task => ({
         ...task,
         isExpanded: false,
-        isSubmitting: false,
       }))
     );
-    setRefreshing(false);
+    setLoading(false);
   };
 
   useEffect(() => {
     loadTasks();
   }, []);
 
-  /* ---------------- UI ---------------- */
+  const updateTask = (id: number, updater: (t: UiTask) => UiTask) => {
+    setTasks(prev => prev.map(t => (t.id === id ? updater(t) : t)));
+  };
 
-   if (tasks.length === 0 && !refreshing) {
-      return (
-        <UserLayout>
-          <View className="flex-1 justify-center items-center">
-            <Text className="text-gray-500 text-lg text-center">
-              You have no tasks available.
-            </Text>
-          </View>
-        </UserLayout>
-      );
-    }
+  const cardBackground = (status: Status) => {
+    return status === 'submitted'
+      ? 'bg-yellow-200 border shadow-md shadow-yellow-400 border-yellow-600'
+      : 'bg-green-200 border border-green-600 shadow-md shadow-green-400';
+  };
+
+  if (!loading && tasks.length === 0) {
+    return (
+      <UserLayout>
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-gray-500 text-lg text-center">
+            No submitted or completed tasks.
+          </Text>
+        </View>
+      </UserLayout>
+    );
+  }
+
   return (
     <UserLayout>
       <View className="flex-1 bg-gray-50 p-4">
-        {refreshing && <ActivityIndicator className="mb-4" />}
+        {loading && <ActivityIndicator className="mb-4" />}
 
         <ScrollView>
           {tasks.map(task => (
             <View
               key={task.id}
-              className="bg-white rounded-2xl p-4 mb-5 shadow"
+              className={`rounded-2xl p-4 mb-5 shadow ${cardBackground(task.status)}`}
             >
               {/* COLLAPSED */}
               {!task.isExpanded && (
@@ -87,11 +88,10 @@ export const AssignedTasks = () => {
                       <Text className="text-base font-medium mr-2">
                         {task.title}
                       </Text>
-                      {priorityBadge(task.priority)}
                     </View>
 
                     <Text className="text-sm text-gray-600">
-                      {task.points} pts
+                      {task.points} pts • <Text className='font-semibold'>{task.status.toUpperCase()}</Text>
                     </Text>
                   </View>
 
@@ -100,7 +100,7 @@ export const AssignedTasks = () => {
                       updateTask(task.id, t => ({ ...t, isExpanded: true }))
                     }
                   >
-                    <Eye size={22} color="green" />
+                    <Eye size={22} color="black" />
                   </TouchableOpacity>
                 </View>
               )}
@@ -112,52 +112,25 @@ export const AssignedTasks = () => {
                     {task.title}
                   </Text>
 
-                  <Text className="text-gray-600 mb-2">
+                  <Text className="text-gray-700 mb-2">
                     <Text className="font-semibold">Description:</Text>{' '}
                     {task.description}
                   </Text>
 
-                  <Text className="text-gray-600 mb-2">
-                    <Text className="font-semibold">Priority:</Text>{' '}
-                    {task.priority}
-                  </Text>
-
-                  <Text className="text-gray-600 mb-4">
+                  <Text className="text-gray-700 mb-4">
                     <Text className="font-semibold">Points:</Text>{' '}
                     {task.points}
                   </Text>
 
-                  <View className="flex-row justify-between mt-4">
-                    <TouchableOpacity
-                      onPress={() =>
-                        updateTask(task.id, t => ({ ...t, isExpanded: false }))
-                      }
-                      className="px-4 py-2 bg-gray-200 rounded-lg flex-row items-center"
-                      disabled={task.isSubmitting}
-                    >
-                      <ArrowLeft size={16} />
-                      <Text className="ml-2 font-medium">Go Back</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => confirmSubmit(task)}
-                      disabled={task.isSubmitting}
-                      className={`px-4 py-2 rounded-lg flex-row items-center ${
-                        task.isSubmitting ? 'bg-gray-400' : 'bg-indigo-600'
-                      }`}
-                    >
-                      {task.isSubmitting ? (
-                        <ActivityIndicator color="#fff" />
-                      ) : (
-                        <>
-                          <Send size={16} color="#fff" />
-                          <Text className="ml-2 text-white font-medium">
-                            Submit
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </View>
+                  <TouchableOpacity
+                    onPress={() =>
+                      updateTask(task.id, t => ({ ...t, isExpanded: false }))
+                    }
+                    className="self-start px-4 py-2 bg-gray-200 rounded-lg flex-row items-center"
+                  >
+                    <ArrowLeft size={16} />
+                    <Text className="ml-2 font-medium">Close</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>

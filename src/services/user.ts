@@ -8,12 +8,19 @@ interface DashboardData {
   rejected: number;
 }
 
-interface AssignedTasks {
+interface Tasks{
   id: number;
   title: string;
   description: string;
-  priority: 'high' | 'medium' | 'low';
   points: number;
+}
+
+interface AssignedTasks extends Tasks {
+  priority: 'high' | 'medium' | 'low';
+}
+
+interface TasksStatus extends Tasks {
+  status: 'submitted' | 'completed';
 }
 
 export const getDashboard = async (): Promise<DashboardData> => {
@@ -41,4 +48,9 @@ export const submitAssignedTask = async (payload: {id: number}) => {
   finally{
     console.log(payload);
   }
+};
+
+export const getTasksStatus = async (): Promise<TasksStatus[]> => {
+  const { data } = await api.get('/user/get-tasks-status');
+  return data;
 };

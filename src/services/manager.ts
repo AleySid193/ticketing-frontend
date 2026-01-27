@@ -79,3 +79,17 @@ export const updateAssignTasks = async (
   const { data } = await api.post('/manager/update-assign-tasks', payload);
   return data;
 };
+
+export const getReviewTasks = async (): Promise<ViewTasks[]> => {
+  const { data } = await api.get('/manager/get-review-tasks');
+  return data;
+};
+
+export const submitReviewedTask = async (payload: {id: number, status: 'completed' | 'rejected' | null}) => {
+  try{
+    await api.post('/manager/update-review-tasks', payload);
+  }
+  catch(err: any){
+    console.log("Api Error: ", err.message);
+  }
+};
