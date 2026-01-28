@@ -76,7 +76,7 @@ export const AdminHome = () => {
         </DashboardSection>
 
         <DashboardSection title="Charts">
-          <ChartCard title="Task Progress" type="pie" data={chart} />
+          <ChartCard title="Tasks Progress" type="pie" data={chart} />
         </DashboardSection>
       </ScrollView>
     </AdminLayout>

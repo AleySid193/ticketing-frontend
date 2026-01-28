@@ -39,7 +39,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ title, type, data }) => {
       onLayout={onLayout} 
       className="bg-white p-2 rounded-xl shadow-md flex-1"
     >
-      <Text className="text-gray-900 font-bold mb-2 ml-2">{title}</Text>
+      <Text className="text-gray-900 font-bold mb-2">{title}</Text>
       
       {containerWidth > 0 && (
         <View className="items-center justify-center">
@@ -71,12 +71,12 @@ export const ChartCard: React.FC<ChartCardProps> = ({ title, type, data }) => {
             <PieChart
               data={data}
               width={containerWidth}
-              height={200}
+              height={containerWidth / 1.5}
               chartConfig={chartConfig}
               accessor="value"
               backgroundColor="transparent"
-              paddingLeft={(containerWidth / 20).toString()} 
-              absolute // Shows absolute values
+              paddingLeft={(containerWidth < 200 ? containerWidth/4 : "15") as any}
+              hasLegend={containerWidth > 200}
             />
           )}
         </View>
